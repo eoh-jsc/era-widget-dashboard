@@ -86,7 +86,7 @@
                           </div>
                         </div>
                         <p class="mb-1">Nhiệt độ</p>
-                        <h4 class="card-title mb-3" id="temp">--</h4>
+                        <h4 class="card-title mb-3" id="nhietDo">--</h4>
                         <small class="fw-medium" id="percentTemp"></small>
                       </div>
                     </div>
@@ -110,7 +110,7 @@
                           </div>
                         </div>
                         <p class="mb-1">Độ ẩm</p>
-                        <h4 class="card-title mb-3" id="humi">--</h4>
+                        <h4 class="card-title mb-3" id="doAm">--</h4>
                         <small class="fw-medium" id="percentHumi"></small>
                       </div>
                     </div>
@@ -145,12 +145,7 @@
                   </div>
                 </div>
               </div>
-              <!-- Total Revenue -->
-              <div class="col-8 mb-6">
-                <iframe src='https://my.spline.design/nexbotrobotcharacterconcept-156110b13dbc65f912897181fe57cacd/' frameborder='0' width='100%' height='100%'></iframe>
-              </div>
-              <!-- Transactions -->
-              <div class="col-4 mb-6">
+              <div class="col-12 mb-6">
                 <div class="card h-100">
                   <div class="card-header d-flex align-items-center justify-content-between">
                     <h5 class="card-title m-0 me-2">Transactions</h5>
@@ -262,7 +257,6 @@
                   </div>
                 </div>
               </div>
-              <!--/ Transactions -->
             </div>
           </div>
           <!-- / Content -->
@@ -281,54 +275,73 @@
   <script src="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
   <script src="assets/vendor/js/menu.js"></script>
   <!-- endbuild -->
+
+  <!-- Tải thư viện Era Widget -->
   <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
   <script>
-    const temp = document.getElementById('temp');
-    const humi = document.getElementById('humi');
-    const turnOn = document.getElementById('turnOn');
-    const turnOff = document.getElementById('turnOff');
+    // Lấy các phần tử HTML dựa trên ID, liên kết với giao diện người dùng
+    const temp = document.getElementById('nhietDo');  // Phần tử hiển thị nhiệt độ
+    const humi = document.getElementById('doAm');  // Phần tử hiển thị độ ẩm
+    const turnOn = document.getElementById('turnOn');  // Nút bật đèn LED
+    const turnOff = document.getElementById('turnOff');  // Nút tắt đèn LED
+    const statusLed = document.getElementById('statusLed');  // Phần tử hiển thị trạng thái đèn LED
+
+    // Biến để lưu cấu hình và trạng thái hiện tại
     let configTemp = null, configHumi = null, configLed = null, newStatusLed = null, actions = [];
 
     const eraWidget = new EraWidget();
     eraWidget.init({
-      needRealtimeConfigs: true,
-      needHistoryConfigs: true,
-      needActions: true,
-      maxRealtimeConfigsCount: 3,
-      maxHistoryConfigsCount: 1,
-      maxActionsCount: 2,
-      minRealtimeConfigsCount: 0,
-      minHistoryConfigsCount: 0,
-      minActionsCount: 0,
+      needRealtimeConfigs: true,         /* Cần giá trị hiện thời */
+      needHistoryConfigs: true,          /* Cần giá trị lịch sử */
+      needActions: true,                 /* Cần các hành động (ví dụ Bật/Tắt đèn) */
+      maxRealtimeConfigsCount: 3,        /* Số lượng tối đa giá trị hiện thời */
+      maxHistoryConfigsCount: 1,         /* Số lượng tối đa giá trị lịch sử */
+      maxActionsCount: 2,                /* Số lượng tối đa các hành động có thể kích hoạt */
+      minRealtimeConfigsCount: 0,        /* Số lượng tối thiểu giá trị hiện thời */
+      minHistoryConfigsCount: 0,         /* Số lượng tối thiểu giá trị lịch sử */
+      minActionsCount: 0,                /* Số lượng tối thiểu hành động */
+
+      /* Hàm callback được gọi khi có cấu hình được nhận từ server */
       onConfiguration: (configuration) => {
-        // console.log('configuration', configuration) // Use console.log when you need to debug
-        configTemp = configuration.realtime_configs[0];
-        configHumi = configuration.realtime_configs[1];
-        configLed = configuration.realtime_configs[2];
-
-        actions = configuration.actions;
+        // Lưu các cấu hình khi nhận được từ widget
+        configTemp = configuration.realtime_configs[0];  // Lưu cấu hình nhiệt độ
+        configHumi = configuration.realtime_configs[1];  // Lưu cấu hình độ ẩm
+        configLed = configuration.realtime_configs[2];  // Lưu cấu hình đèn LED
+        actions = configuration.actions;  // Lưu các hành động điều khiển
       },
+
+      /* Hàm callback được gọi khi nhận giá trị mới từ server */
       onValues: (values) => {
-        console.log('values', values) // Use console.log when you need to debug
+        // Cập nhật giá trị nhận được từ widget
+        const valueTemp = values[configTemp.id].value;  // Giá trị nhiệt độ
+        const valueHumi = values[configHumi.id].value;  // Giá trị độ ẩm
+        const valueLed = values[configLed.id].value;  // Giá trị trạng thái đèn LED
 
-        const valueTemp = values[configTemp.id].value;
-        const valueHumi = values[configHumi.id].value;
+        // Cập nhật giao diện người dùng với giá trị mới
+        temp.innerHTML = valueTemp + ' °C';  // Hiển thị nhiệt độ
+        humi.innerHTML = valueHumi + ' %';  // Hiển thị độ ẩm
 
-        // const stateLed = values[configLed.id].value;
-        temp.innerHTML = valueTemp + ' oC';
-        humi.innerHTML = valueHumi + ' %';
-
+        // Kiểm tra trạng thái mới của đèn LED, nếu thay đổi thì cập nhật
+        if (newStatusLed !== valueLed) {
+          newStatusLed = valueLed;
+          if (valueLed === 1) {
+            statusLed.innerHTML = 'Đèn đang bật';  // Hiển thị trạng thái đèn LED đang bật
+          } else {
+            statusLed.innerHTML = 'Đèn đang tắt';  // Hiển thị trạng thái đèn LED đang tắt
+          }
+        }
       },
     });
 
-    // Trigger actions based on the switch state
+    // Kích hoạt các hành động dựa trên trạng thái của công tắc
     turnOn.addEventListener('click', () => {
-      eraWidget.triggerAction(actions[0]?.action, null); // Trigger 'On' action
+      eraWidget.triggerAction(actions[0]?.action, null);  // Kích hoạt hành động "Bật đèn"
     });
     turnOff.addEventListener('click', () => {
-      eraWidget.triggerAction(actions[1]?.action, null); // Trigger 'Off' action
+      eraWidget.triggerAction(actions[1]?.action, null);  // Kích hoạt hành động "Tắt đèn"
     });
   </script>
+
 </body>
 
 </html>
